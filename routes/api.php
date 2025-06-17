@@ -20,6 +20,26 @@ Route::get('/receive-data/3', function (Request $request) {
     return insertToSensorTable($request, 'sensor_data3', 'Tempat Sampah 3');
 });
 
+Route::get('/receive-data/4', function (Request $request) {
+    return insertToSensorTable($request, 'sensor_data4', 'Tempat Sampah 4');
+});
+
+Route::get('/receive-data/5', function (Request $request) {
+    return insertToSensorTable($request, 'sensor_data5', 'Tempat Sampah 5');
+});
+
+Route::get('/receive-data/6', function (Request $request) {
+    return insertToSensorTable($request, 'sensor_data6', 'Tempat Sampah 6');
+});
+
+Route::get('/receive-data/6', function (Request $request) {
+    return insertToSensorTable($request, 'sensor_data6', 'Tempat Sampah 6');
+});
+
+Route::get('/receive-data/6', function (Request $request) {
+    return insertToSensorTable($request, 'sensor_data6', 'Tempat Sampah 6');
+});
+
 Route::post('/telegram/webhook', function () {
     $update = json_decode(file_get_contents('php://input'), true);
 
@@ -66,14 +86,14 @@ if (!function_exists('insertToSensorTable')) {
 
             // Kirim notifikasi jika penuh
           if ($status === 'Penuh') {
-    $chatIds = \App\Models\TelegramUser::pluck('chat_id');
-    foreach ($chatIds as $chatId) {
-        TelegramHelper::sendMessage(
-            "🚨 *$label* PENUH!\n📍 Jarak: {$distance} cm\n📊 Isi: " . round($persentaseIsi) . "%\n⚠️ Segera kosongkan tempat sampah!",
-            $chatId
-        );
-    }
-}
+                $chatIds = \App\Models\TelegramUser::pluck('chat_id');
+                foreach ($chatIds as $chatId) {
+                    TelegramHelper::sendMessage(
+                        "🚨 *$label* PENUH!\n📍 Jarak: {$distance} cm\n📊 Isi: " . round($persentaseIsi) . "%\n⚠️ Segera kosongkan tempat sampah!",
+                        $chatId
+                    );
+                }
+            }
 
 
             return response()->json([

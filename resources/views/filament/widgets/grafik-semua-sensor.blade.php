@@ -1,6 +1,9 @@
 <x-filament::widget>
-  <div>
-    <img src="{{ asset('style/assets/img/tong-sampah.jpeg') }}" alt="Coba" style="width: 200px;">
-</div>
+    <x-filament::card>
+        {{-- Tombol Reset ditampilkan di bagian header --}}
+        {{ $this->headerActions }}
 
+        {{-- Chart --}}
+        {{ $this->chart }}
+    </x-filament::card>
 </x-filament::widget>
