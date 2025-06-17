@@ -1,0 +1,27 @@
+/* Ubah warna latar belakang navbar Filament */
+header.fi-topbar {
+    background-color: #004d73 !important; /* warna biru gelap, bisa diganti */
+    color: white !important;
+}
+
+/* Ubah warna teks pada judul kolom di tabel */
+table th {
+    background-color: #004d73 !important; /* sama seperti navbar */
+    color: white !important;
+}
+
+/* Tambahan: ubah warna hover baris tabel */
+table tbody tr:hover {
+    background-color: #e3f2fd;
+}
+
+/* Tambahan: ubah warna tombol di header (opsional) */
+header.fi-topbar .fi-btn {
+    background-color: white;
+    color: #004d73;
+    border: none;
+}
+
+header.fi-topbar .fi-btn:hover {
+    background-color: #cce7f3;
+}
