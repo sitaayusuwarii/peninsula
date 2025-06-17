@@ -10,39 +10,42 @@ use App\Models\SensorData5;
 use App\Models\SensorData6;
 use App\Models\SensorData7;
 use App\Models\SensorData8;
+use App\Models\SensorReset;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
-
 use Filament\Widgets\BarChartWidget;
-use Illuminate\Contracts\View\View;
-use Filament\Widgets\Widget;
 
 class GrafikSemuaSensor extends BarChartWidget
 {
-    protected static ?string $heading = 'Grafik Persentase Isi Tong Sampah (%)';
+    protected static ?string $heading = 'Grafik Persentase Isi Tempat Sampah (%)';
     protected static ?int $sort = 1;
     protected $listeners = ['refreshChart' => '$refresh'];
 
-
     public function getHeaderActions(): array
-{
-     return [
-        Action::make('Reset Tampilan')
-            ->label('Reset Tampilan')
-            ->icon('heroicon-o-arrow-path')
-            ->color('secondary')
-            ->action(function () {
-                $this->dispatch('refreshChart'); // trigger refresh grafik
+    {
+        return [
+            Action::make('Reset Tampilan')
+                ->label('Reset Tampilan')
+                ->icon('heroicon-o-arrow-path')
+                ->color('secondary')
+                ->action(function () {
+                    foreach (range(1, 8) as $i) {
+                        SensorReset::updateOrCreate(
+                            ['sensor_name' => 'sensor_data' . $i],
+                            ['reset_at' => now()]
+                        );
+                    }
 
-                Notification::make()
-                    ->title('Tampilan berhasil direset!')
-                    ->success()
-                    ->send();
-            }),
-    ];
-}
+                    $this->dispatch('refreshChart');
 
-    // Lebar full
+                    Notification::make()
+                        ->title('Tampilan semua sensor berhasil direset!')
+                        ->success()
+                        ->send();
+                }),
+        ];
+    }
+
     public function getColumnSpan(): int|string|array
     {
         return 'full';
@@ -50,16 +53,14 @@ class GrafikSemuaSensor extends BarChartWidget
 
     public function getContentHeight(): ?string
     {
-    return '500px'; // atau '600px', bebas kamu sesuaikan
+        return '500px';
     }
 
     public function getPollingInterval(): ?string
     {
-        return '5s'; // atau '10s', '30s', dst
+        return '5s';
     }
 
-    
-    // Opsi tampilan grafik
     protected function getOptions(): array
     {
         return [
@@ -78,76 +79,73 @@ class GrafikSemuaSensor extends BarChartWidget
         ];
     }
 
-    // Data yang ditampilkan
     protected function getData(): array
     {
         $tinggiTong = 100;
 
-        $sensor1 = SensorData1::latest('timestamp')->first();
-        $sensor2 = SensorData2::latest('timestamp')->first();
-        $sensor3 = SensorData3::latest('timestamp')->first();
-        $sensor4 = SensorData4::latest('timestamp')->first();
-        $sensor5 = SensorData5::latest('timestamp')->first();
-        $sensor6 = SensorData6::latest('timestamp')->first();
-        $sensor7 = SensorData7::latest('timestamp')->first();
-        $sensor8 = SensorData8::latest('timestamp')->first();
+        // Ambil waktu reset tiap sensor
+        $resetTimes = collect(range(1, 8))->mapWithKeys(function ($i) {
+            $reset = SensorReset::where('sensor_name', 'sensor_data' . $i)->first();
+            return ['sensor' . $i => optional($reset)->reset_at];
+        });
 
-
-        // Ambil jarak atau default ke tinggi penuh
-        $jarak = [
-            $sensor1?->distance ?? $tinggiTong,
-            $sensor2?->distance ?? $tinggiTong,
-            $sensor3?->distance ?? $tinggiTong,
-            $sensor4?->distance ?? $tinggiTong,
-            $sensor5?->distance ?? $tinggiTong,
-            $sensor6?->distance ?? $tinggiTong,
-            $sensor7?->distance ?? $tinggiTong,
-            $sensor8?->distance ?? $tinggiTong,
-
+        // Ambil data terbaru dari masing-masing sensor
+        $sensorModels = [
+            SensorData1::class,
+            SensorData2::class,
+            SensorData3::class,
+            SensorData4::class,
+            SensorData5::class,
+            SensorData6::class,
+            SensorData7::class,
+            SensorData8::class,
         ];
 
-        // Hitung persentase isi tong
-        $persentase = collect($jarak)->map(fn($d) => max(0, min(100, round((($tinggiTong - $d) / $tinggiTong) * 100))))->toArray();
+        $dataSensors = collect($sensorModels)->map(function ($model, $index) use ($resetTimes) {
+            $resetKey = 'sensor' . ($index + 1);
+            return $model::when($resetTimes[$resetKey], fn($q) => $q->where('timestamp', '>=', $resetTimes[$resetKey]))
+                ->latest('timestamp')->first();
+        });
 
-        // Tentukan status
+        // Hitung jarak, persentase isi, dan status
+        $jarak = $dataSensors->map(fn($sensor) => $sensor?->distance ?? $tinggiTong)->toArray();
+        $persentase = collect($jarak)->map(fn($d) => max(0, min(100, round((($tinggiTong - $d) / $tinggiTong) * 100))))->toArray();
         $status = collect($jarak)->map(fn($d) => $d <= 20 ? 'Penuh' : 'Kosong')->toArray();
 
-        // Warna batang: merah jika penuh
-        $colors = [
-            $jarak[0] <= 20 ? 'rgba(248, 7, 7, 0.8)' : 'rgba(54, 162, 235, 0.8)',
-            $jarak[1] <= 20 ? 'rgba(248, 7, 7, 0.8)' : 'rgba(255, 206, 86, 0.8)',
-            $jarak[2] <= 20 ? 'rgba(248, 7, 7, 0.8)' : 'rgba(153, 102, 255, 0.8)',
-            $jarak[3] <= 20 ? 'rgba(248, 7, 7, 0.8)' : 'rgba(31, 216, 71, 0.8)',
-            $jarak[4] <= 20 ? 'rgba(248, 7, 7, 0.8)' : 'rgba(223, 53, 180, 0.8)',
-            $jarak[5] <= 20 ? 'rgba(248, 7, 7, 0.8)' : 'rgba(172, 212, 59, 0.8)',
-            $jarak[6] <= 20 ? 'rgba(248, 7, 7, 0.8)' : 'rgba(27, 10, 122, 0.8)',
-            $jarak[7] <= 20 ? 'rgba(248, 7, 7, 0.8)' : 'rgba(198, 218, 180, 0.8)',
-
+        // Warna tetap untuk tiap tong
+        $warnaTetap = [
+            'rgba(54, 162, 235, 0.8)',   // Tong 1 - biru
+            'rgba(255, 206, 86, 0.8)',   // Tong 2 - kuning
+            'rgba(75, 192, 192, 0.8)',   // Tong 3 - hijau laut
+            'rgba(153, 102, 255, 0.8)',  // Tong 4 - ungu
+            'rgba(255, 159, 64, 0.8)',   // Tong 5 - oranye
+            'rgba(199, 199, 199, 0.8)',  // Tong 6 - abu-abu
+            'rgba(255, 99, 132, 0.8)',   // Tong 7 - pink
+            'rgba(100, 255, 218, 0.8)',  // Tong 8 - toska
         ];
 
-        $borderColors = [
-            $jarak[0] <= 20 ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)',
-            $jarak[1] <= 20 ? 'rgba(255, 99, 132, 1)' : 'rgba(255, 206, 86, 1)',
-            $jarak[2] <= 20 ? 'rgba(255, 99, 132, 1)' : 'rgba(153, 102, 255, 1)',
-            $jarak[3] <= 20 ? 'rgba(248, 7, 7, 0.8)' : 'rgba(31, 216, 71, 0.8)',
-            $jarak[4] <= 20 ? 'rgba(248, 7, 7, 0.8)' : 'rgba(223, 53, 180, 0.8)',
-            $jarak[5] <= 20 ? 'rgba(248, 7, 7, 0.8)' : 'rgba(172, 212, 59, 0.8)',
-            $jarak[6] <= 20 ? 'rgba(248, 7, 7, 0.8)' : 'rgba(27, 10, 122, 0.8)',
-            $jarak[7] <= 20 ? 'rgba(248, 7, 7, 0.8)' : 'rgba(198, 218, 180, 0.8)',
+        $warnaBorderTetap = [
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)',
+            'rgba(199, 199, 199, 1)',
+            'rgba(255, 99, 132, 1)',
+            'rgba(100, 255, 218, 1)',
         ];
+
+        // Ubah warna jika penuh
+        $colors = collect($jarak)->map(function ($d, $i) use ($warnaTetap) {
+            return $d <= 20 ? 'rgba(248, 7, 7, 0.8)' : $warnaTetap[$i];
+        })->toArray();
+
+        $borderColors = collect($jarak)->map(function ($d, $i) use ($warnaBorderTetap) {
+            return $d <= 20 ? 'rgba(255, 0, 0, 1)' : $warnaBorderTetap[$i];
+        })->toArray();
 
         // Label batang
-        $labels = [
-            "Tong 1 ({$status[0]} - {$persentase[0]}%)",
-            "Tong 2 ({$status[1]} - {$persentase[1]}%)",
-            "Tong 3 ({$status[2]} - {$persentase[2]}%)",
-            "Tong 4 ({$status[3]} - {$persentase[3]}%)",
-            "Tong 5 ({$status[4]} - {$persentase[4]}%)",
-            "Tong 6 ({$status[5]} - {$persentase[5]}%)",
-            "Tong 7 ({$status[6]} - {$persentase[6]}%)",
-            "Tong 8 ({$status[7]} - {$persentase[7]}%)",
-
-        ];
+        $labels = collect(range(1, 8))->map(fn($i) => "Tong $i ({$status[$i - 1]} - {$persentase[$i - 1]}%)")->toArray();
 
         return [
             'labels' => $labels,
@@ -157,15 +155,8 @@ class GrafikSemuaSensor extends BarChartWidget
                     'data' => $persentase,
                     'backgroundColor' => $colors,
                     'borderColor' => $borderColors,
-                    // 'borderWidth' => 1,
                 ],
             ],
         ];
     }
-
-//     protected function getView(): string
-//     {
-//         return 'filament.widgets.grafik-semua-sensor'; // buat file Blade dengan nama ini
-//     }
-
 }

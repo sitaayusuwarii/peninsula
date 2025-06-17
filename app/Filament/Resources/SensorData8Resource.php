@@ -37,11 +37,22 @@ class SensorData8Resource extends Resource
 {
     return $table
         ->columns([
-            Tables\Columns\TextColumn::make('id')->label('ID'),
+            Tables\Columns\TextColumn::make('virtual_id')
+                ->label('ID')
+                ->getStateUsing(function ($record, $livewire) {
+                    $records = $livewire->getFilteredTableQuery()->get();
+
+                    $index = $records->search(fn ($item) => $item->id === $record->id);
+
+                    $total = $records->count();
+
+                    return $index !== false ? $total - $index : '-';
+                }),
+
 
             Tables\Columns\TextColumn::make('virtual_lokasi')
                 ->label('Lokasi')
-                ->getStateUsing(fn () => 'Titik C')
+                ->getStateUsing(fn () => 'Titik H')
                 ->extraAttributes(['class' => 'filament-table-column']), // ⚠️ trik supaya muncul
 
             Tables\Columns\TextColumn::make('distance')->label('Jarak (cm)'),

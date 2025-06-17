@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
+
 class SensorData1Resource extends Resource
 {
     protected static ?string $model = SensorData1::class;
@@ -25,6 +26,13 @@ class SensorData1Resource extends Resource
     protected static ?int $navigationSort = 1;
 
 
+//     public static function getPages(): array
+// {
+//     return [
+//         'index' => Pages\ListSensorData1s::route('/'),
+//     ];
+// }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -33,11 +41,24 @@ class SensorData1Resource extends Resource
             ]);
     }
 
+    
     public static function table(Table $table): Table
 {
     return $table
         ->columns([
-            Tables\Columns\TextColumn::make('id')->label('ID'),
+            Tables\Columns\TextColumn::make('virtual_id')
+        ->label('ID')
+        ->getStateUsing(function ($record, $livewire) {
+            $records = $livewire->getFilteredTableQuery()->get();
+
+            $index = $records->search(fn ($item) => $item->id === $record->id);
+
+            $total = $records->count();
+
+            return $index !== false ? $total - $index : '-';
+        }),
+
+
 
             Tables\Columns\TextColumn::make('virtual_lokasi')
                 ->label('Lokasi')

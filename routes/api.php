@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -7,38 +6,37 @@ use App\Helpers\TelegramHelper;
 use App\Models\TelegramUser;
 use Illuminate\Support\Facades\Http;
 
+Route::get('/receive-data/1', fn(Request $request) =>
+    insertToSensorTable($request, 'sensor_data1', 'Tempat Sampah 1', 'Titik A')
+);
 
-Route::get('/receive-data/1', function (Request $request) {
-    return insertToSensorTable($request, 'sensor_data1', 'Tempat Sampah 1');
-});
+Route::get('/receive-data/2', fn(Request $request) =>
+    insertToSensorTable($request, 'sensor_data2', 'Tempat Sampah 2', 'Titik B')
+);
 
-Route::get('/receive-data/2', function (Request $request) {
-    return insertToSensorTable($request, 'sensor_data2', 'Tempat Sampah 2');
-});
+Route::get('/receive-data/3', fn(Request $request) =>
+    insertToSensorTable($request, 'sensor_data3', 'Tempat Sampah 3', 'Titik C')
+);
 
-Route::get('/receive-data/3', function (Request $request) {
-    return insertToSensorTable($request, 'sensor_data3', 'Tempat Sampah 3');
-});
+Route::get('/receive-data/4', fn(Request $request) =>
+    insertToSensorTable($request, 'sensor_data4', 'Tempat Sampah 4', 'Titik D')
+);
 
-Route::get('/receive-data/4', function (Request $request) {
-    return insertToSensorTable($request, 'sensor_data4', 'Tempat Sampah 4');
-});
+Route::get('/receive-data/5', fn(Request $request) =>
+    insertToSensorTable($request, 'sensor_data5', 'Tempat Sampah 5', 'Titik E')
+);
 
-Route::get('/receive-data/5', function (Request $request) {
-    return insertToSensorTable($request, 'sensor_data5', 'Tempat Sampah 5');
-});
+Route::get('/receive-data/6', fn(Request $request) =>
+    insertToSensorTable($request, 'sensor_data6', 'Tempat Sampah 6', 'Titik F')
+);
 
-Route::get('/receive-data/6', function (Request $request) {
-    return insertToSensorTable($request, 'sensor_data6', 'Tempat Sampah 6');
-});
+Route::get('/receive-data/7', fn(Request $request) =>
+    insertToSensorTable($request, 'sensor_data7', 'Tempat Sampah 7', 'Titik G')
+);
 
-Route::get('/receive-data/6', function (Request $request) {
-    return insertToSensorTable($request, 'sensor_data6', 'Tempat Sampah 6');
-});
-
-Route::get('/receive-data/6', function (Request $request) {
-    return insertToSensorTable($request, 'sensor_data6', 'Tempat Sampah 6');
-});
+Route::get('/receive-data/8', fn(Request $request) =>
+    insertToSensorTable($request, 'sensor_data8', 'Tempat Sampah 8', 'Titik H')
+);
 
 Route::post('/telegram/webhook', function () {
     $update = json_decode(file_get_contents('php://input'), true);
@@ -51,21 +49,18 @@ Route::post('/telegram/webhook', function () {
         ]);
 
         Http::post("https://api.telegram.org/bot" . config('services.telegram.bot_token') . "/sendMessage", [
-    'chat_id' => $chatId,
-    'text' => '✅ Kamu sudah terdaftar untuk menerima notifikasi tong sampah!',
-    ]);
-
+            'chat_id' => $chatId,
+            'text' => '✅ Kamu sudah terdaftar untuk menerima notifikasi tong sampah!',
+        ]);
     }
 
     return response()->json(['ok' => true]);
 });
 
-
 if (!function_exists('insertToSensorTable')) {
-    function insertToSensorTable(Request $request, $table, $label)
+    function insertToSensorTable(Request $request, $table, $label, $location)
     {
         $distance = $request->query('distance');
-        $location = $request->query('location', $label); // fallback pakai label sensor
 
         if (!$distance || !is_numeric($distance)) {
             return response()->json([
@@ -85,16 +80,15 @@ if (!function_exists('insertToSensorTable')) {
             ]);
 
             // Kirim notifikasi jika penuh
-          if ($status === 'Penuh') {
-                $chatIds = \App\Models\TelegramUser::pluck('chat_id');
+            if ($status === 'Penuh') {
+                $chatIds = TelegramUser::pluck('chat_id');
                 foreach ($chatIds as $chatId) {
                     TelegramHelper::sendMessage(
-                        "🚨 *$label* PENUH!\n📍 Jarak: {$distance} cm\n📊 Isi: " . round($persentaseIsi) . "%\n⚠️ Segera kosongkan tempat sampah!",
+                        "🚨 *$label* PENUH!\n📍 Lokasi: $location\n📏 Jarak: {$distance} cm\n📊 Isi: " . round($persentaseIsi) . "%\n⚠️ Segera kosongkan tempat sampah!",
                         $chatId
                     );
                 }
             }
-
 
             return response()->json([
                 'status' => 'success',
