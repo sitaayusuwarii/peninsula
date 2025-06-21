@@ -15,9 +15,9 @@ Route::get('/gallery', function () {
     return view('gallery');
 });
 
-Route::get('/login', function () {
-    return view('login');
-});
+// Route::get('/login', function () {
+//     return view('login');
+// })->name('login');
 
 Route::get('/chatbot', function () {
     return view('chatbot');

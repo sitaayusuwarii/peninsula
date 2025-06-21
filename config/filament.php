@@ -98,4 +98,16 @@ return [
 
     'system_route_prefix' => 'filament',
 
+    /*
+    |--------------------------------------------------------------------------
+    | Panel Providers
+    |--------------------------------------------------------------------------
+    |
+    | Di sinilah kamu mendaftarkan semua PanelProvider-mu
+    |
+    */
+
+    'panel_providers' => [
+        App\Providers\Filament\AdminPanelProvider::class,
+    ],
 ];
